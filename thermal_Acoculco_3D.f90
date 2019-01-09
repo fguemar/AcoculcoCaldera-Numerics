@@ -1,5 +1,5 @@
 !
-!	therm_Ac_3D.f90
+!	thermal_Acoculco_3D.f90
 !
 !	Created by Fernando J. Guerrero-Martinez (fguerrero@igeofisica.unam.mx) on April/18.
 !	Finite Volume scheme to solve the steady-state heat transfer equation
@@ -22,9 +22,9 @@ character*50 txt, vol, dph, mcase, Filename, frmt
 
 !Arrays definitions
 real, allocatable, dimension(:) :: xc, yc, zc, x, y, z !mesh arrays
-real, allocatable, dimension(:,:) :: topo, curie_base, tlogs !Temperatures read from input files 
+real, allocatable, dimension(:,:) :: topo, curie_base, tlogs !Data read from input files 
 real, allocatable, dimension(:,:,:) :: t, ap, ae, aw, an, as, at, ab, sp, gamma !Matrix coefficients and variables
-integer, allocatable, dimension(:,:,:) :: mark_cells 
+integer, allocatable, dimension(:,:,:) :: mark_cells !To identify particular mesh elements
 
 !Number of mesh elements
 nx=145
@@ -38,7 +38,7 @@ allocate (gamma(0:nx+1,0:ny+1,0:nz+1), topo(0:nx+1,0:ny+1), curie_base(0:nx+1,0:
 allocate (mark_cells(0:nx+1,0:ny+1,0:nz+1), tlogs(43,2))
 
 !set number of threads por parallel computing of residual
-call omp_set_num_threads(2)
+call omp_set_num_threads(1)
 
 !Domain definition, UTM coordinates
 x0=583340.0
@@ -48,16 +48,17 @@ yl=2212022.0
 z0=-6000.0
 zl=3100.0
 
-!maximum iteretions for the solver
+!maximum solver iteretions
 max_iter=8000
 
 time1=omp_get_wtime()
 
-!builds the 3D mesh
+!builds the mesh
 call Mesh1D (xc, x, x0, xl, nx)
 call Mesh1D (yc, y, y0, yl, ny)
 call Mesh1D (zc, z, z0, zl, nz)
 
+!Reads elevations and Curie depth
 open(unit=1, file='in_elevAcoculco.txt')
 open(unit=2, file='in_CurieDepth.txt')
 do i=1, 145
@@ -76,18 +77,20 @@ topo(:,0)=topo(:,1); topo(:,ny+1)=topo(:,ny)
 curie_base(0,:)=curie_base(1,:); curie_base(nx+1,:)=curie_base(nx,:)
 curie_base(:,0)=curie_base(:,1); curie_base(:,ny+1)=curie_base(:,ny)
 
-!Set number of depths of the heat sources to evaluate
+!Set number of depths of the local heat sources to be evaluated
 do ni=1, 6
 
 !=======================================================================
-!                    Initial values of variables
+!                    Initializing arrays
 t=0.0;aP=0.0;ae=0.0;aw=0.0;an=0.0;as=0.0;at=0.0;ab=0.0;sp=0.0
 mark_cells=0
 
 tamb=15.0; tcur=580.0
 
 !=======================================================================
-!            Initial temperature field. Geothermal gradient
+!                    Initial temperature field
+!=======================================================================
+!Geothermal gradient
 do i=0, nx+1
 	do j=0, ny+1
 		do k=0, nz+1
@@ -140,7 +143,7 @@ call select_disc_3D(1, t, mark_cells, 3, x, xc, y, yc, z, zc, nx, ny, nz, rad, 5
 !       Define thermal conductivity and store values in array gamma
 call conductivity_Ac (xc, yc, zc, nx, ny, nz, gamma)
 
-!Additionally, set a conductivity of 0.8 W/(m-K) for the upper 50 m soils
+!Additionally, set a conductivity of 0.8 W/(m-K) for the upper 50 m (soils)
 do k=0, nz+1
    do i=0, nx+1
     do j=0, ny+1
@@ -181,7 +184,7 @@ end do
 			sp(i,j,k)=0.0
 		
 		!The surface, Curie isotherm, and heat sources are kept at a constant temperature
-		!the following conditions take this into account and correct coefficients accordingly
+		!the following 'if' conditions take this into account and correct coefficients accordingly
 		if (mark_cells(i,j,k) .eq. 1 .or. mark_cells(i,j,k) .eq. 2 .or. mark_cells(i,j,k) .eq. 3) then
 		ae(i,j,k)=0.0; aw(i,j,k)=0.0; an(i,j,k)=0.0; as(i,j,k)=0.0; at(i,j,k)=0.0; ab(i,j,k)=0.0; ap(i,j,k)=1.0
 			if(mark_cells(i,j,k) .eq. 1) sp(i,j,k)=tamb
@@ -242,27 +245,27 @@ end do
 
 !Boundary conditions
 
-!East
+!East, Neuman
 	ap(nx,:,:)=ap(nx,:,:)-ae(nx,:,:)
 	ae(nx,:,:)=0.0
 
-!West
+!West, Neuman
 	ap(1,:,:)=ap(1,:,:)-aw(1,:,:)
 	aw(1,:,:)=0.0
 
-!North
+!North, Neuman
 	ap(:,ny,:)=ap(:,ny,:)-an(:,ny,:)
 	an(:,ny,:)=0.0
 
-!South
+!South, Neuman
 	ap(:,1,:)=ap(:,1,:)-as(:,1,:)
 	as(:,1,:)=0.0
 
-!Top
+!Top, Dirichlet
 	sp(:,:,nz)=sp(:,:,nz)+at(:,:,nz)*tamb
 	at(:,:,nz)=0.0
 
-!Bottom
+!Bottom, Dirichlet
 	sp(:,:,1)=sp(:,:,1)+ab(:,:,1)*tcur
 	ab(:,:,1)=0.0
 
@@ -534,7 +537,7 @@ end select
 end subroutine
 
 !=======================================================================
-!Asigns a temperature value to a disc of a specified radius on on a plane x, y, or z 
+!Asigns a temperature value to a disc of a specified radius on a plane x, y, or z 
 !Control: 1, 2, and 3 for planes z, x, y respectively.
 !Depth and radius are specified
 !marker is an iteger to identify the location of the disc
