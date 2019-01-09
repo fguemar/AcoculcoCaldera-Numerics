@@ -6,7 +6,7 @@ Finite Volume implementation to solve the heat transfer equation in the Acoculco
 
 Files 1 and 2 correspond to the estimated Curie isotherm and the Digital Terrain Elevation Model (DTEM) of the study area. These files are read by the program in order to define constant temperature boundary conditions at the top and bottom boundaries of the three-dimensional domain.
 
-Input file 3 contains the temperature logs of the two exploratory wells EAC-1 and EAC-2; first column is temperature (Celsius) and second column is depth below surface. Temperature log of well EAC-1 is given form row 1 to 18, the remaining data correspond to well EAC-2.  
+Input file 3 contains the temperature logs of the existing exploratory wells in the area, EAC-1 and EAC-2; first column is temperature (Celsius) and second column is depth below surface. Temperature log of well EAC-1 is given form row 1 to 18, the remaining data correspond to well EAC-2.  
 
 The program generates five output files (where '#' represent a depth (of the local heat sources) in meters below sea level):
 
