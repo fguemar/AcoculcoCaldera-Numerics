@@ -87,9 +87,7 @@ mark_cells=0
 tamb=15.0; tcur=580.0
 
 !=======================================================================
-!                     Initial temperature field
-!=======================================================================
-!Geothermal gradient
+!            Initial temperature field. Geothermal gradient
 do i=0, nx+1
 	do j=0, ny+1
 		do k=0, nz+1
