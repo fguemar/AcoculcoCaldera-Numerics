@@ -1,0 +1,20 @@
+### SCRIPT PARA EJECUTAR el programa de convec
+## qdel - delete job
+## qstat - jobs status
+## compile:
+## ifort  -fp-model fast=2 -I$INTEL_INC/intel64 -L$INTEL_LIB  -qopenmp 5doubleD_CG.f90 
+
+#PBS -N FreeC_job
+#PBS -q gen3
+#PBS -o salida
+#PBS -e error
+#PBS -l nodes=1:ppn=10
+
+. /etc/profile.d/modules.sh
+module load intel/ipsxe_2019
+
+cd $PBS_O_WORKDIR
+
+export OMP_NUM_THREADS=$PBS_NP
+
+./a.out
